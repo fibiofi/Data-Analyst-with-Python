@@ -1,0 +1,25 @@
+import requests
+from bs4 import BeautifulSoup
+
+url = 'http://books.toscrape.com/'
+response = requests.get(url)
+
+if response.status_code == 200:
+    soup = BeautifulSoup(response.text, 'html.parser')
+
+    # Mengganti dengan tag, kelas, dan atribut HTML yang sesuai
+    product_containers = soup.find_all('article', class_='product_pod')
+
+    for container in product_containers:
+        product_type = container.h3.a['title']
+
+        stock_elem = container.find('p', class_='instock availability')
+        stock = stock_elem.text.strip() if stock_elem else 'Tidak ditemukan'
+
+        price_elem = container.find('p', class_='price_color')
+        price = price_elem.text.strip() if price_elem else 'Tidak ditemukan'
+
+        print(f"Produk: {product_type}, Jumlah Stok: {stock}, Harga: {price}")
+
+else:
+    print(f"Failed to retrieve the page. Status code: {response.status_code}")

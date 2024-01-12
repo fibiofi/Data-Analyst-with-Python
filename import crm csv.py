@@ -2,34 +2,46 @@ import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 
-url = 'http://books.toscrape.com/'
-response = requests.get(url)
+url = 'http://books.toscrape.com/catalogue/page-1.html'
+titles = []
+prices = []
+stock = []
 
-if response.status_code == 200:
-    soup = BeautifulSoup(response.text, 'html.parser')
+#looping 1001 data
+for page_num in range(1, 51):  # Ubah angka 51 sesuai dengan jumlah halaman
+    page_url = f'http://books.toscrape.com/catalogue/page-{page_num}.html'
+    response = requests.get(page_url)
 
-    products = soup.find_all('h3')
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
 
-    # Inisialisasi list untuk menyimpan data
-    titles = []
-    prices = []
+        product_containers = soup.find_all('article', class_='product_pod')
 
-    for product in products:
-        title = product.a['title']
-        price = product.find_next('p', class_='price_color').text
+        for container in product_containers:
+            product_type = container.h3.a['title']
 
-        # Menambahkan data ke list
-        titles.append(title)
-        prices.append(price)
+            stock_elem = container.find('p', class_='instock availability')
+            stock_value = stock_elem.text.strip() if stock_elem else 'Tidak ditemukan'
 
-    # Membuat DataFrame menggunakan pandas
-    data = {'Judul': titles, 'Harga': prices}
-    df = pd.DataFrame(data)
+            price_elem = container.find('p', class_='price_color')
+            price = price_elem.text.strip() if price_elem else 'Tidak ditemukan'
 
-    # Menyimpan DataFrame ke file Excel
-    df.to_excel('toscrape.xlsx', index=False)
+            # Menambahkan data ke list
+            titles.append(product_type)
+            stock.append(stock_value)
+            prices.append(price)
 
-    print("Data berhasil disimpan ke toscrape.xlsx")
+        print(f"Data dari halaman {page_num} berhasil diambil.")
 
-else:
-    print(f"Failed to retrieve the page. Status code: {response.status_code}")
+    else:
+        print(f"Failed to retrieve the page. Status code: {response.status_code}")
+        break  # Berhenti jika gagal mengambil halaman
+
+# Membuat DataFrame menggunakan pandas
+data = {'Judul': titles, 'Stok': stock, 'Harga': prices}
+df = pd.DataFrame(data)
+
+# Menyimpan DataFrame ke file Excel
+df.to_excel('analisisprofperusahaan.xlsx', index=False)
+
+print(f"Data berhasil disimpan ke analisisprofperusahaan.xlsx (Jumlah data: {len(titles)})")
